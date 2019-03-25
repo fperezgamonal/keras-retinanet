@@ -24,13 +24,14 @@ import progressbar
 assert(callable(progressbar.progressbar)), "Using wrong progressbar module, install 'progressbar2' instead."
 
 
-def evaluate_coco(generator, model, threshold=0.05):
+def evaluate_coco(generator, model, threshold=0.05, cat_ids=None):
     """ Use the pycocotools to evaluate a COCO model on a dataset.
 
     Args
         generator : The generator for generating the evaluation data.
         model     : The model to evaluate.
         threshold : The score threshold to use.
+        cat_ids    : The category indices to evaluate (if None, the default nº of categories is evaluated)
     """
     # start collecting results
     results = []
@@ -59,13 +60,28 @@ def evaluate_coco(generator, model, threshold=0.05):
             if score < threshold:
                 break
 
-            # append detection for each positively labeled class
-            image_result = {
-                'image_id'    : generator.image_ids[index],
-                'category_id' : generator.label_to_coco_label(label),
-                'score'       : float(score),
-                'bbox'        : box.tolist(),
-            }
+            print("label: {0}".format(label))
+            if (label != 2) and (cat_ids is not None):  # apply quick (hardcoded) fix ONLY for car class
+                # This is necessary because the loaded module detected all 81 classes from Coco
+                # A better solution would be to 'fix' the mapping from retina labels to coco as needed
+                # This would depen on the number of classes of the subset and which
+                # This quick fix works because: generator.label_to_coco_label(0)=3 (desired coco label)
+                image_result = {
+                    'image_id': generator.image_ids[index],
+                    'category_id': generator.label_to_coco_label(0),
+                    'score': float(score),
+                    'bbox': box.tolist(),
+                }
+
+            else:
+                # ALL detected classes are evaluated (default behaviour)
+                # append detection for each positively labeled class
+                image_result = {
+                    'image_id': generator.image_ids[index],
+                    'category_id': generator.label_to_coco_label(label),
+                    'score': float(score),
+                    'bbox': box.tolist(),
+                }
 
             # append detection to results
             results.append(image_result)
@@ -87,6 +103,9 @@ def evaluate_coco(generator, model, threshold=0.05):
     # run COCO evaluation
     coco_eval = COCOeval(coco_true, coco_pred, 'bbox')
     coco_eval.params.imgIds = image_ids
+    # So we can only assess a set of classes instead of all
+    if cat_ids is not None:
+        coco_eval.params.catIds = cat_ids
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()

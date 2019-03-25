@@ -21,7 +21,7 @@ from ..utils.coco_eval import evaluate_coco
 class CocoEval(keras.callbacks.Callback):
     """ Performs COCO evaluation on each epoch.
     """
-    def __init__(self, generator, tensorboard=None, threshold=0.05):
+    def __init__(self, generator, tensorboard=None, threshold=0.05, cat_ids=None):
         """ CocoEval callback intializer.
 
         Args

@@ -58,6 +58,16 @@ def create_generator(args):
             image_max_side=args.image_max_side,
             config=args.config
         )
+    elif args.dataset_type == 'aicity':  # should work (almost) identically to COCO
+        from ..preprocessing.coco import CocoGenerator
+
+        validation_generator = CocoGenerator(
+            args.coco_path,
+            'val',
+            image_min_side=args.image_min_side,
+            image_max_side=args.image_max_side,
+            config=args.config
+        )
     elif args.dataset_type == 'pascal':
         validation_generator = PascalVocGenerator(
             args.pascal_path,
