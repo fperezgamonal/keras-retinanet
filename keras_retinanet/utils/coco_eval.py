@@ -60,22 +60,26 @@ def evaluate_coco(generator, model, threshold=0.05, cat_ids=None):
             if score < threshold:
                 break
 
-            print("label: {0}".format(label))
-            if (label != 2) and (cat_ids is not None):  # apply quick (hardcoded) fix ONLY for car class
-                # This is necessary because the loaded module detected all 81 classes from Coco
-                # A better solution would be to 'fix' the mapping from retina labels to coco as needed
-                # This would depen on the number of classes of the subset and which
-                # This quick fix works because: generator.label_to_coco_label(0)=3 (desired coco label)
-                image_result = {
-                    'image_id': generator.image_ids[index],
-                    'category_id': generator.label_to_coco_label(0),
-                    'score': float(score),
-                    'bbox': box.tolist(),
-                }
+            # print("label: {0}, 'cat_ids is not None':{1}".format(label, cat_ids is not None))
+            if "aicity" in generator.data_dir:
+                if (label == 2) and (cat_ids is not None):  # apply quick (hardcoded) fix ONLY for car class
+                    # This is necessary because the loaded module detected all 81 classes from Coco
+                    # A better solution would be to 'fix' the mapping from retina labels to coco as needed
+                    # This would depen on the number of classes of the subset and which
+                    # This quick fix works because: generator.label_to_coco_label(0)=3 (desired coco label)
+                    image_result = {
+                        'image_id': generator.image_ids[index],
+                        'category_id': generator.label_to_coco_label(0),
+                        'score': float(score),
+                        'bbox': box.tolist(),
+                    }
+                    # Super-hardcoded(specially below)
+                elif (label != 2) and (cat_ids is not None):  # we do not want to evaluate other classes
+                    continue  # go to next bbox
 
-            else:
-                # ALL detected classes are evaluated (default behaviour)
+            else:  # ALL detected classes are evaluated (default behaviour)
                 # append detection for each positively labeled class
+                # print("label: {0}".format(label))
                 image_result = {
                     'image_id': generator.image_ids[index],
                     'category_id': generator.label_to_coco_label(label),

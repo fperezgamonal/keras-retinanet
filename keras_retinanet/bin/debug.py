@@ -71,6 +71,18 @@ def create_generator(args):
             image_max_side=args.image_max_side,
             config=args.config
         )
+    elif args.dataset_type == 'aicity':
+        # import here to prevent unnecessary dependency on cocoapi
+        from ..preprocessing.coco import CocoGenerator
+
+        generator = CocoGenerator(
+            args.aicity_path,
+            args.aicity_set,
+            transform_generator=transform_generator,
+            image_min_side=args.image_min_side,
+            image_max_side=args.image_max_side,
+            config=args.config
+        )
     elif args.dataset_type == 'pascal':
         generator = PascalVocGenerator(
             args.pascal_path,
@@ -128,6 +140,10 @@ def parse_args(args):
     coco_parser.add_argument('coco_path',  help='Path to dataset directory (ie. /tmp/COCO).')
     coco_parser.add_argument('--coco-set', help='Name of the set to show (defaults to val2017).', default='val2017')
 
+    aicity_parser = subparsers.add_parser('aicity')
+    aicity_parser.add_argument('aicity_path', help='Path to dataset directory (ie. /tmp/aicity).')
+    aicity_parser.add_argument('--aicity-set', help='Name of the set to show (defaults to val).', default='val')
+
     pascal_parser = subparsers.add_parser('pascal')
     pascal_parser.add_argument('pascal_path', help='Path to dataset directory (ie. /tmp/VOCdevkit).')
     pascal_parser.add_argument('--pascal-set',  help='Name of the set to show (defaults to test).', default='test')
@@ -159,6 +175,10 @@ def parse_args(args):
     parser.add_argument('--image-min-side', help='Rescale the image so the smallest side is min_side.', type=int, default=800)
     parser.add_argument('--image-max-side', help='Rescale the image if the largest side is larger than max_side.', type=int, default=1333)
     parser.add_argument('--config', help='Path to a configuration parameters .ini file.')
+
+    # To specify category ids (only one class for now)
+    parser.add_argument('--cat_ids', help='Indices for the categories to evaluate (one class for now)', type=int,
+                        default=None)
 
     return parser.parse_args(args)
 

@@ -170,7 +170,12 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
             from ..callbacks.coco import CocoEval
 
             # use prediction model for evaluation
-            evaluation = CocoEval(validation_generator, tensorboard=tensorboard_callback)
+            evaluation = CocoEval(validation_generator, tensorboard=tensorboard_callback, cat_ids=args.cat_ids)
+        elif args.dataset_type == 'aicity':  # maybe it does not strictly need an independent 'elif' but JIC
+            from ..callbacks.coco import CocoEval
+
+            # use prediction model for evaluation
+            evaluation = CocoEval(validation_generator, tensorboard=tensorboard_callback, cat_ids=args.cat_ids)
         else:
             evaluation = Evaluate(validation_generator, tensorboard=tensorboard_callback, weighted_average=args.weighted_average)
         evaluation = RedirectModel(evaluation, prediction_model)
@@ -242,17 +247,46 @@ def create_generators(args, preprocess_image):
     if args.dataset_type == 'coco':
         # import here to prevent unnecessary dependency on cocoapi
         from ..preprocessing.coco import CocoGenerator
+        if "aicity" in args.coco_path:  # yet another quick and dirty fix
+            train_generator = CocoGenerator(
+                args.coco_path,
+                'train',
+                transform_generator=transform_generator,
+                **common_args
+            )
+
+            validation_generator = CocoGenerator(
+                args.coco_path,
+                'val',
+                **common_args
+            )
+        else:
+            train_generator = CocoGenerator(
+                args.coco_path,
+                'train2017',
+                transform_generator=transform_generator,
+                **common_args
+            )
+
+            validation_generator = CocoGenerator(
+                args.coco_path,
+                'val2017',
+                **common_args
+            )
+    elif args.dataset_type == 'aicity':
+        # import here to prevent unnecessary dependency on cocoapi
+        from ..preprocessing.coco import CocoGenerator
 
         train_generator = CocoGenerator(
-            args.coco_path,
-            'train2017',
+            args.aicity_path,
+            'train',
             transform_generator=transform_generator,
             **common_args
         )
 
         validation_generator = CocoGenerator(
-            args.coco_path,
-            'val2017',
+            args.aicity_path,
+            'val',
             **common_args
         )
     elif args.dataset_type == 'pascal':
@@ -365,6 +399,9 @@ def parse_args(args):
     coco_parser = subparsers.add_parser('coco')
     coco_parser.add_argument('coco_path', help='Path to dataset directory (ie. /tmp/COCO).')
 
+    aicity_parser = subparsers.add_parser('aicity')
+    aicity_parser.add_argument('aicity_path', help='Path to dataset directory (ie. /tmp/aicity).')
+
     pascal_parser = subparsers.add_parser('pascal')
     pascal_parser.add_argument('pascal_path', help='Path to dataset directory (ie. /tmp/VOCdevkit).')
 
@@ -415,6 +452,9 @@ def parse_args(args):
     # Fit generator arguments
     parser.add_argument('--workers', help='Number of multiprocessing workers. To disable multiprocessing, set workers to 0', type=int, default=1)
     parser.add_argument('--max-queue-size', help='Queue length for multiprocessing workers in fit generator.', type=int, default=10)
+
+    # To specify category ids (only one class for now)
+    parser.add_argument('--cat_ids', help='Indices for the categories to evaluate (one class for now)', type=int, default=None)
 
     return check_args(parser.parse_args(args))
 
